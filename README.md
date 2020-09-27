@@ -1,2 +1,2 @@
-# Tp-CG-Final
+# Tp-cg-final
 Trabalho Prático de Computação Gráfica
