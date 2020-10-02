@@ -18,6 +18,7 @@ static int shoulderz = 0;
 GLfloat angle = 60, fAspect;
 CarregarArquivo carro;
 CarregarArquivo roda;
+CarregarArquivo frente;
 
 int Rot_carro = 90;
 float Trans_carro_x = 0.0;
@@ -33,6 +34,7 @@ void Inicializa(void)
     glEnable(GL_DEPTH_TEST);
     carro.Carregar("C:/Users/adria/Desktop/PLE -20.3/CG/Projetos/TP - Final/carro.obj");
     roda.Carregar("C:/Users/adria/Desktop/PLE -20.3/CG/Projetos/TP - Final/roda.obj");
+    frente.Carregar("C:/Users/adria/Desktop/PLE -20.3/CG/Projetos/TP - Final/frente.obj");
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(65, 1.0, 0.5, 500);
@@ -64,6 +66,28 @@ void Roda (float scala, float tx, float ty, float tz)
     glPopMatrix();
 }
 
+void Frente (float scala, float tx, float ty, float tz)
+{
+    glPushMatrix();
+    glTranslated(tx,ty,tz);
+    glScalef(scala,scala,scala);
+    glColor3f( 0.2, 0.2, 1.2 );
+    for (unsigned int j = 0; j < (frente.faces).size(); ++j )
+    {
+        glBegin ( GL_POLYGON );
+
+        for (unsigned int i = 0; i < (frente.faces[j]).size() ; ++i )
+        {
+
+            GLfloat vert[3] = {(frente.vertices[frente.faces[j][i][0]][0]),(frente.vertices[frente.faces[j][i][0]][1]),(frente.vertices[frente.faces[j][i][0]][2])};
+            glVertex3fv ( vert );
+        }
+
+        glEnd( );
+    }
+    glPopMatrix();
+}
+
 void Carro (int rot_y, float trans_x, float trans_z)
 {
     glPushMatrix();
@@ -81,11 +105,23 @@ void Carro (int rot_y, float trans_x, float trans_z)
         }
         glEnd( );
     }
-    Roda (1.0, 2.0, 1.9, 1.0);
-    Roda (1.0, 2.0, 1.9, -1.0);
-    Roda (1.0, -1.2, 1.9, 1.0);
-    Roda (1.0, -1.2, 1.9, -1.0);
+    Roda (1.0, 2.0, 1.9, 1.0);  //roda traseira esquerda
+    Roda (1.0, 2.0, 1.9, -0.8); //roda traseira direita   ARRUMAR
+    Roda (1.0, -1.2, 1.9, 1.2); //roda dianteira esquerda
+    Roda (1.0, -1.2, 1.9, -0.9); //roda dianteira direita  ARRUMAR
+    Frente(0.889, 0.69, 1.700, 0.0689);
     glPopMatrix();
+
+    // Frente(0.889, 0.69, 1.690, 0.0789)
+    //Frente(0.89, 0.69, 1.689, -0.009);
+
+    //Roda (escala, frente, cima, lado direito);
+
+
+    //Roda (1.0, 2.0, 1.9, 1.0);  //roda traseira esquerda
+   //Roda (1.0, 2.0, 1.9, -1.0); //roda traseira direita   ARRUMAR
+   // Roda (1.0, -1.2, 1.9, 1.0); //roda dianteira esquerda
+   // Roda (1.0, -1.2, 1.9, -1.0); //roda dianteira direita  ARRUMAR
 }
 
 void Piso(float scale, float altura)
@@ -116,12 +152,6 @@ void Desenha(void)
 
 
     glPushMatrix();
-        /* Definindo rotações em torno dos eixos x, y, z, para o ombro */
-        /*
-        glRotatef ((GLfloat) shoulderx, 0.0, 0.0, 1.0);
-        glRotatef ((GLfloat) shouldery, 0.0, 1.0, 0.0);
-        glRotatef ((GLfloat) shoulderz, 1.0, 0.0, 0.0);
-        */
 
         Piso(1.0,-2.0);
 
@@ -155,7 +185,7 @@ void Teclado(unsigned char key, int x, int y)
 {
     switch (key)
     {
-    case 'd':
+    case 's':
         Rot_carro = (Rot_carro - 5) % 360;
         glutPostRedisplay();
         break;
