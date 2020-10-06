@@ -15,6 +15,8 @@ static int fingerfinalz = 0;
 static int elbow = 0;
 static int shoulderz = 0;
 
+static int angRoda = 0;
+
 GLfloat angle = 60, fAspect;
 CarregarArquivo carro;
 CarregarArquivo roda;
@@ -25,6 +27,10 @@ float Trans_carro_x = 0.0;
 float Trans_carro_z = 90.0;
 float Velocidade = 0.0;
 float scala = 1.0;
+float camera_x = 0.0;
+float camera_z = -13;
+
+bool flag = false;
 
 void Inicializa(void)
 {
@@ -42,6 +48,16 @@ void Inicializa(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(0,0,13,0,0,0,0,1,0); //especifica a posição do observador e do alvo.
+
+    // Habilita a definição da cor do material a partir da cor corrente
+    glEnable(GL_COLOR_MATERIAL);
+    //Habilita o uso de iluminação
+    glEnable(GL_LIGHTING);
+    // Habilita a luz de número 0
+    glEnable(GL_LIGHT0);
+    // Habilita o depth-buffering
+    glEnable(GL_DEPTH_TEST);
+
 }
 
 void Roda (float scala, float tx, float ty, float tz)
@@ -71,7 +87,7 @@ void Frente (float scala, float tx, float ty, float tz)
     glPushMatrix();
     glTranslated(tx,ty,tz);
     glScalef(scala,scala,scala);
-    glColor3f( 0.2, 0.2, 1.2 );
+    glColor3f( 0.2, 0.2, 0.2 );
     for (unsigned int j = 0; j < (frente.faces).size(); ++j )
     {
         glBegin ( GL_POLYGON );
@@ -88,6 +104,16 @@ void Frente (float scala, float tx, float ty, float tz)
     glPopMatrix();
 }
 
+/*
+int anguloRodaPositivo(int anguloCarro) {
+    printf("%d\n", anguloCarro);
+    anguloCarro = anguloCarro % 360;
+    if(anguloCarro > 10)
+        return 10;
+    else
+        return anguloCarro;
+}
+*/
 void Carro (int rot_y, float trans_x, float trans_z)
 {
     glPushMatrix();
@@ -107,21 +133,39 @@ void Carro (int rot_y, float trans_x, float trans_z)
     }
     Roda (1.0, 2.0, 1.9, 1.0);  //roda traseira esquerda
     Roda (1.0, 2.0, 1.9, -0.8); //roda traseira direita   ARRUMAR
-    Roda (1.0, -1.2, 1.9, 1.2); //roda dianteira esquerda
-    Roda (1.0, -1.2, 1.9, -0.9); //roda dianteira direita  ARRUMAR
+
+    glPushMatrix();
+        glRotatef(angRoda, 0.0, 0.1, 0.0);
+        Roda (1.0, -1.2, 1.9, 1.2); //roda dianteira esquerda
+        Roda (1.0, -1.2, 1.9, -0.9); //roda dianteira direita  ARRUMAR
+    glPopMatrix();
+
     Frente(0.889, 0.69, 1.700, 0.0689);
     glPopMatrix();
 
-    // Frente(0.889, 0.69, 1.690, 0.0789)
-    //Frente(0.89, 0.69, 1.689, -0.009);
-
     //Roda (escala, frente, cima, lado direito);
+}
 
-
-    //Roda (1.0, 2.0, 1.9, 1.0);  //roda traseira esquerda
-   //Roda (1.0, 2.0, 1.9, -1.0); //roda traseira direita   ARRUMAR
-   // Roda (1.0, -1.2, 1.9, 1.0); //roda dianteira esquerda
-   // Roda (1.0, -1.2, 1.9, -1.0); //roda dianteira direita  ARRUMAR
+void DefineIluminacao (void)
+{
+    GLfloat luzAmbiente[4]= {0.2,0.2,0.2,1.0};
+    GLfloat luzDifusa[4]= {0.7,0.7,0.7,1.0}; // "cor"
+    GLfloat luzEspecular[4]= {1.0, 1.0, 1.0, 1.0}; // "brilho"
+    GLfloat posicaoLuz[4]= {0.0, 5.0, 5.0, 1.0};
+    // Capacidade de brilho do material
+    GLfloat especularidade[4]= {1.0,1.0,1.0,1.0};
+    GLint especMaterial = 60;
+    // Define a refletância do material
+    glMaterialfv(GL_FRONT,GL_SPECULAR, especularidade);
+    // Define a concentração do brilho
+    glMateriali(GL_FRONT,GL_SHININESS,especMaterial);
+    // Ativa o uso da luz ambiente
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, luzAmbiente);
+    // Define os parâmetros da luz de número 0
+    glLightfv(GL_LIGHT0, GL_AMBIENT, luzAmbiente);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, luzDifusa );
+    glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular );
+    glLightfv(GL_LIGHT0, GL_POSITION, posicaoLuz );
 }
 
 void Piso(float scale, float altura)
@@ -145,11 +189,11 @@ void Desenha(void)
 {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    DefineIluminacao();
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(Trans_carro_x,3, Trans_carro_z + 13, Trans_carro_x,0,Trans_carro_z, 0,1,0); // Camera
-
-
+    //gluLookAt(Trans_carro_x,3, Trans_carro_z + 13, Trans_carro_x,0,Trans_carro_z, 0,1,0); // Camera
+    gluLookAt(camera_x,3,camera_z, Trans_carro_x,0,Trans_carro_z,0,1,0); // Camera atras do carro
 
     glPushMatrix();
 
@@ -178,6 +222,8 @@ void idle()
 {
     Trans_carro_x = Trans_carro_x + Velocidade*sin(Rot_carro*PI/180);
     Trans_carro_z = Trans_carro_z + Velocidade*cos(Rot_carro*PI/180);
+    camera_x = Trans_carro_x + 13.0*sin((Rot_carro+180)*PI/180);
+    camera_z = Trans_carro_z + 13.0*cos((Rot_carro+180)*PI/180);
     glutPostRedisplay();
 }
 
@@ -187,10 +233,14 @@ void Teclado(unsigned char key, int x, int y)
     {
     case 's':
         Rot_carro = (Rot_carro - 5) % 360;
+        if(angRoda > -20)
+            angRoda = angRoda - 5;
         glutPostRedisplay();
         break;
     case 'a':
         Rot_carro = (Rot_carro + 5) % 360;
+        if(angRoda < 20)
+            angRoda = angRoda + 5;
         glutPostRedisplay();
         break;
     case 'e':
