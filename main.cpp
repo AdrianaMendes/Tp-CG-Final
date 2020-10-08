@@ -6,6 +6,9 @@
 #include<math.h>
 #define PI 3.14159265
 
+GLubyte lado[2048][2048][3];
+GLuint textura_id2;
+
 using namespace std;
 
 static int handx = 0;
@@ -14,7 +17,6 @@ static int shouldery = 0;
 static int fingerfinalz = 0;
 static int elbow = 0;
 static int shoulderz = 0;
-
 static int angRoda = 0;
 
 GLfloat angle = 60, fAspect;
@@ -34,7 +36,7 @@ bool flag = false;
 
 void Inicializa(void)
 {
-    glClearColor (1.0, 1.0, 1.0, 0.0);
+    glClearColor (0.0, 0.3, 0.0, 0.0);
     glColor3f(0.0, 1.0, 0.0);
     angle = 60;
     glEnable(GL_DEPTH_TEST);
@@ -58,6 +60,42 @@ void Inicializa(void)
     // Habilita o depth-buffering
     glEnable(GL_DEPTH_TEST);
 
+    /* BEGIN */
+    try
+    {
+        char c;
+        ifstream arq2("C:/Users/adria/Desktop/PLE -20.3/CG/Projetos/TP - Final/texture/pista.bmp" ,ios::binary);
+
+        if(!arq2)
+            cout << "Erro ao abrir";
+
+        for(int i = 0; i < 54 ; i++)
+            c = arq2.get();
+        for(int i = 0; i < 2048 ; i++)
+            for(int j = 0; j < 2048 ; j++) {
+                c = arq2.get();
+                lado[i][j][2] = c;
+                c =  arq2.get();
+                lado[i][j][1] = c ;
+                c =  arq2.get();
+                lado[i][j][0] = c;
+            }
+
+        arq2.close();
+        arq2.clear();
+    }
+    catch(...) {
+        cout << "Erro ao ler imagem" << endl;
+    }
+
+    glGenTextures(1,&textura_id2);
+    glBindTexture(GL_TEXTURE_2D, textura_id2);
+    glTexImage2D(GL_TEXTURE_2D, 0, 3,2048, 2048, 0, GL_RGB,GL_UNSIGNED_BYTE, lado);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    /* END */
 }
 
 void Roda (float scala, float tx, float ty, float tz)
@@ -65,7 +103,7 @@ void Roda (float scala, float tx, float ty, float tz)
     glPushMatrix();
     glTranslated(tx,ty,tz);
     glScalef(scala,scala,scala);
-    glColor3f( 0.2, 0.2, 0.2 );
+    glColor3f( 0, 0, 0 );
     for (unsigned int j = 0; j < (roda.faces).size(); ++j )
     {
         glBegin ( GL_POLYGON );
@@ -87,7 +125,7 @@ void Frente (float scala, float tx, float ty, float tz)
     glPushMatrix();
     glTranslated(tx,ty,tz);
     glScalef(scala,scala,scala);
-    glColor3f( 0.2, 0.2, 0.2 );
+    glColor3f( 0.1, 0.1, 0.1);
     for (unsigned int j = 0; j < (frente.faces).size(); ++j )
     {
         glBegin ( GL_POLYGON );
@@ -102,6 +140,7 @@ void Frente (float scala, float tx, float ty, float tz)
         glEnd( );
     }
     glPopMatrix();
+
 }
 
 /*
@@ -120,7 +159,7 @@ void Carro (int rot_y, float trans_x, float trans_z)
     glTranslatef(trans_x,0.0,trans_z);
 
     glRotatef(rot_y + 90,0.0,1.0,0.0);
-    glColor3f(1.0,0.5,0.5);
+    glColor3f(1.0,0.0,0.0);
     for (unsigned int j = 0; j < (carro.faces).size(); ++j )
     {
         glBegin ( GL_POLYGON );
@@ -140,7 +179,10 @@ void Carro (int rot_y, float trans_x, float trans_z)
         Roda (1.0, -1.2, 1.9, -0.9); //roda dianteira direita  ARRUMAR
     glPopMatrix();
 
+    //glClearColor (1.0, 1.0, 1.0, 1.0);
     Frente(0.889, 0.69, 1.700, 0.0689);
+
+
     glPopMatrix();
 
     //Roda (escala, frente, cima, lado direito);
@@ -148,10 +190,18 @@ void Carro (int rot_y, float trans_x, float trans_z)
 
 void DefineIluminacao (void)
 {
+    GLfloat luzAmbiente[4]= {3,3,3,3};
+    GLfloat luzDifusa[4]= {0.5,0.5,0.5,0.5}; // "cor"
+    GLfloat luzEspecular[4]= {1.0, 1.0, 1.0, 1.0}; // "brilho"
+    GLfloat posicaoLuz[4]= {0.0, 5.0, 5.0, 1.0};
+
+    /*
     GLfloat luzAmbiente[4]= {0.2,0.2,0.2,1.0};
     GLfloat luzDifusa[4]= {0.7,0.7,0.7,1.0}; // "cor"
     GLfloat luzEspecular[4]= {1.0, 1.0, 1.0, 1.0}; // "brilho"
     GLfloat posicaoLuz[4]= {0.0, 5.0, 5.0, 1.0};
+    */
+
     // Capacidade de brilho do material
     GLfloat especularidade[4]= {1.0,1.0,1.0,1.0};
     GLint especMaterial = 60;
@@ -171,29 +221,63 @@ void DefineIluminacao (void)
 void Piso(float scale, float altura)
 {
     glPushMatrix();
-    glTranslatef(0.0, altura, 0.0);
-    glScalef(scale,scale,scale);
-    glColor3f(0.0,1.0,0.0);
-    glBegin(GL_POLYGON);
-    glVertex3f(100.0, 0.0, 100.0);
-    glVertex3f(-100.0, 0.0, 100.0);
-    glVertex3f(-100.0, 0.0, -100.0);
-    glVertex3f(100.0, 0.0, -100.0);
-    glEnd();
+        glTranslatef(0.0, altura, 0.0);
+        //glScaled(scale,scale,scale);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, textura_id2);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        /*
+        glBegin(GL_POLYGON); // Face posterior
+            glNormal3f(0,0,1); // Normal da face
+            glTexCoord2f(0,0);
+            glVertex3f(5.0, 5.0, 5.0);
+            glTexCoord2f(1,0);
+            glVertex3f(-5.0, 5.0, 5.0);
+            glTexCoord2f(1,1);
+            glVertex3f(-5.0, -5.0, 5.0);
+            glTexCoord2f(0,1);
+            glVertex3f(5.0, -5.0, 5.0);
+        glEnd();
+        */
+        glBegin(GL_POLYGON); // Face inferior
+            glNormal3f(0,-1,0); // Normal da face
+            glVertex3f(100.0, 0.0, 100.0);
+            glTexCoord2f(0,1);
+            glVertex3f(-100.0, 0.0, 100.0);
+            glTexCoord2f(1,1);
+            glVertex3f(-100.0, 0.0, -100.0);
+            glTexCoord2f(1,0);
+            glVertex3f(100.0, 0.0, -100.0);
+            glTexCoord2f(0,0);
+        glEnd();
 
     glPopMatrix();
+
+    /*
+    glPushMatrix();
+        glTranslatef(0.0, altura, 0.0);
+        glScalef(scale,scale,scale);
+        glColor3f(0.0,1.0,0.0);
+        glBegin(GL_POLYGON);
+            glVertex3f(100.0, 0.0, 100.0);
+            glVertex3f(-100.0, 0.0, 100.0);
+            glVertex3f(-100.0, 0.0, -100.0);
+            glVertex3f(100.0, 0.0, -100.0);
+        glEnd();
+    glPopMatrix();
+    */
 }
 
 
 void Desenha(void)
 {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     DefineIluminacao();
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     //gluLookAt(Trans_carro_x,3, Trans_carro_z + 13, Trans_carro_x,0,Trans_carro_z, 0,1,0); // Camera
-    gluLookAt(camera_x,3,camera_z, Trans_carro_x,0,Trans_carro_z,0,1,0); // Camera atras do carro
+    //gluLookAt(camera_x,3,camera_z, Trans_carro_x,0,Trans_carro_z,0,1,0); // Camera atras do carro
+    gluLookAt(camera_x,15,camera_z, Trans_carro_x,0,Trans_carro_z,0,1,0); // Camera atras do carro
 
     glPushMatrix();
 
@@ -227,37 +311,71 @@ void idle()
     glutPostRedisplay();
 }
 
-void Teclado(unsigned char key, int x, int y)
-{
-    switch (key)
-    {
-    case 's':
-        Rot_carro = (Rot_carro - 5) % 360;
-        if(angRoda > -20)
-            angRoda = angRoda - 5;
+void Teclado(unsigned char key, int x, int y) {
+    switch (key) {
+    case 'd':
+        if(Velocidade == 0.0) {
+            printf("[ERROR] - O carro nao pode esta parado para virar.\n");
+            if(angRoda > -20)
+                angRoda = angRoda - 5;
+            break;
+        }
+        if(Velocidade > 0) {
+            Rot_carro = (Rot_carro - 5) % 360;
+            if(angRoda > -20)
+                angRoda = angRoda - 5;
+        }
+        else {
+            Rot_carro = (Rot_carro + 5) % 360;
+            if(angRoda < 20)
+                angRoda = angRoda + 5;
+        }
         glutPostRedisplay();
         break;
+
     case 'a':
-        Rot_carro = (Rot_carro + 5) % 360;
-        if(angRoda < 20)
-            angRoda = angRoda + 5;
+        if(Velocidade == 0.0) {
+            printf("[ERROR] - Para virar o carro precisar esta em movimento.\n");
+            if(angRoda < 20)
+                angRoda = angRoda + 5;
+            break;
+        }
+
+        if(Velocidade > 0) {
+            Rot_carro = (Rot_carro + 5) % 360;
+            if(angRoda < 20)
+                angRoda = angRoda + 5;
+        }
+        else {
+            Rot_carro = (Rot_carro - 5) % 360;
+            if(angRoda > -20)
+                angRoda = angRoda - 5;
+        }
         glutPostRedisplay();
         break;
+
+    case 'r':
+        if(Velocidade == 0.00)
+            Velocidade = -0.02;
+        else
+            Velocidade = 0.00;
+        glutPostRedisplay();
+        break;
+
     case 'e':
         if(Velocidade == 0.0)
-        {
-            Velocidade = 0.02;
-        }
+            Velocidade = 0.05;
         else
-        {
             Velocidade = 0.00;
-        }
         glutPostRedisplay();
         break;
+
     case 27:
         exit(0);
         break;
+
     default:
+        printf("[ERROR] - Entrada: %c invalida.\n", key);
         break;
     }
 }
