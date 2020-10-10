@@ -51,21 +51,29 @@
 	<vector>
 	<string>
 
-1602194050 source:c:\users\adria\desktop\ple -20.3\cg\projetos\tp - final\main.cpp
+1602297346 source:c:\users\adria\desktop\ple -20.3\cg\projetos\tp - final\main.cpp
 	<windows.h>
 	<GL/glut.h>
 	<stdlib.h>
 	<iostream>
-	"CarregarArquivo.cpp"
 	<math.h>
+	"CarregarArquivo.cpp"
 
-1601555164 c:\users\adria\desktop\ple -20.3\cg\projetos\tp - final\carregararquivo.cpp
+1602291378 c:\users\adria\desktop\ple -20.3\cg\projetos\tp - final\carregararquivo.cpp
 	<stdlib.h>
 	<iostream>
 	<fstream>
 	<GL/gl.h>
 	<GL/glut.h>
+	<vector>
+	<string>
+
+1602291378 source:c:\users\adria\desktop\ple -20.3\cg\projetos\tp - final\carregararquivo.cpp
 	<stdlib.h>
+	<iostream>
+	<fstream>
+	<GL/gl.h>
+	<GL/glut.h>
 	<vector>
 	<string>
 

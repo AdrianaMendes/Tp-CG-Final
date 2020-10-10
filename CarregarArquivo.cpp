@@ -3,7 +3,6 @@
 #include <fstream>
 #include <GL/gl.h>
 #include <GL/glut.h>
-#include <stdlib.h>
 #include <vector>
 #include <string>
 
@@ -107,7 +106,7 @@ public:
                     //string t;
                     getline(arquivo,t);
 
-                    int found = t.find("//");
+                    unsigned int found = t.find("//");
 
                     if (found!=string::npos) //vertices e normal
                     {
@@ -116,7 +115,6 @@ public:
                         GLint valor_inteiro ;
                         int valor = 0;
                         int numero = 10;
-                        int posi = 0;
                         for(int i = 0 ; i < t.size(); i++)
                         {
                             char ch = t[i];
@@ -154,47 +152,30 @@ public:
                             {
                                 valor_inteiro  = valor -1;
                                 vert_normal.push_back(valor_inteiro );
-
                                 valor = 0;
                                 face.push_back(vert_normal);
                                 vector<GLint> aux4;
                                 vert_normal = aux4;
-
                             }
-
-
-
-
                         }
-
                         faces.push_back(face);
-
-
                     }
                     if(barras) //não tem normal
                     {
-
                         found = t.find("/"); //
-
                         if (found!=string::npos)//tem textura
                         {
-
                             vector<GLint> vert_textura;
                             GLint valor_inteiro ;
                             int valor = 0;
                             int numero = 10;
-                            int posi = 0;
-
                             for(int i = 0 ; i < t.size(); i++)
                             {
-
                                 char ch = t[i];
-
                                 if(ch >= '0' && ch <= '9')
                                 {
                                     valor = valor*numero;
                                     valor = valor + ((int)ch - (int)'0');
-
                                     if(i== t.size() -1)
                                     {
                                         valor_inteiro = valor -1;
@@ -250,7 +231,7 @@ public:
                             GLint valor_inteiro ;
                             int valor = 0;
                             int numero = 10;
-                            int posi = 0;
+
 
                             for(int i = 0 ; i < t.size(); i++)
                             {

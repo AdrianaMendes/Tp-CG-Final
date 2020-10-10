@@ -1,46 +1,34 @@
-#include<windows.h>
+#include <windows.h>
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <iostream>
+#include <math.h>
 #include "CarregarArquivo.cpp"
-#include<math.h>
+
 #define PI 3.14159265
 
-GLubyte lado[2048][2048][3];
-GLuint textura_id2;
+GLubyte matrizTexturaPista[2048][2048][3];
+GLuint texturaPista;
 
-using namespace std;
-
-static int handx = 0;
-static int shoulderx = 0;
-static int shouldery = 0;
-static int fingerfinalz = 0;
-static int elbow = 0;
-static int shoulderz = 0;
-static int angRoda = 0;
-
-GLfloat angle = 60, fAspect;
 CarregarArquivo carro;
 CarregarArquivo roda;
 CarregarArquivo frente;
 
-int Rot_carro = 90;
+bool flagVelocidade = false;    //Indica se o carro está em movimento
+
+float direcaoRoda = 0;
+int direcaoCarro = 90;
+int rotacaoRoda = 0;
+
 float Trans_carro_x = 0.0;
 float Trans_carro_z = 90.0;
-float Velocidade = 0.0;
-float scala = 1.0;
+float velocidadeCarro = 0.0;
 float camera_x = 0.0;
 float camera_z = -13;
-int anguloMagico = 0;
 
-bool flag = false;
-bool flagVelocidade = false;
-
-void Inicializa(void)
-{
+void Inicializa(void) {
     glClearColor (0.0, 0.3, 0.0, 0.0);
     glColor3f(0.0, 1.0, 0.0);
-    angle = 60;
     glEnable(GL_DEPTH_TEST);
     carro.Carregar("C:/Users/adria/Desktop/PLE -20.3/CG/Projetos/TP - Final/carro.obj");
     roda.Carregar("C:/Users/adria/Desktop/PLE -20.3/CG/Projetos/TP - Final/roda.obj");
@@ -48,12 +36,11 @@ void Inicializa(void)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(65, 1.0, 0.5, 500);
-
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(0,0,13,0,0,0,0,1,0); //especifica a posição do observador e do alvo.
 
-    // Habilita a definição da cor do material a partir da cor corrente
+    //Habilita a definição da cor do material a partir da cor corrente
     glEnable(GL_COLOR_MATERIAL);
     //Habilita o uso de iluminação
     glEnable(GL_LIGHTING);
@@ -62,129 +49,110 @@ void Inicializa(void)
     // Habilita o depth-buffering
     glEnable(GL_DEPTH_TEST);
 
-    try
-    {
+    try {
         char c;
-        ifstream arq2("C:/Users/adria/Desktop/PLE -20.3/CG/Projetos/TP - Final/texture/pista.bmp",ios::binary);
+        ifstream arqvTextura("C:/Users/adria/Desktop/PLE -20.3/CG/Projetos/TP - Final/texture/pista.bmp",ios::binary);
 
-        if(!arq2)
-            cout << "Erro ao abrir";
+        if(!arqvTextura)
+            printf("[ERROR] - Erro ao abrir.\n");
 
         for(int i = 0; i < 54 ; i++)
-            c = arq2.get();
+            c = arqvTextura.get();
         for(int i = 0; i < 2048 ; i++)
-            for(int j = 0; j < 2048 ; j++)
-            {
-                c = arq2.get();
-                lado[i][j][2] = c;
-                c =  arq2.get();
-                lado[i][j][1] = c ;
-                c =  arq2.get();
-                lado[i][j][0] = c;
+            for(int j = 0; j < 2048 ; j++) {
+                c = arqvTextura.get();
+                matrizTexturaPista[i][j][2] = c;
+                c =  arqvTextura.get();
+                matrizTexturaPista[i][j][1] = c ;
+                c =  arqvTextura.get();
+                matrizTexturaPista[i][j][0] = c;
             }
-
-        arq2.close();
-        arq2.clear();
+        arqvTextura.close();
+        arqvTextura.clear();
     }
-    catch(...)
-    {
-        cout << "Erro ao ler imagem" << endl;
+    catch(...) {
+        printf("[ERROR] - Erro ao ler imagem.\n");
     }
 
-    glGenTextures(1,&textura_id2);
-    glBindTexture(GL_TEXTURE_2D, textura_id2);
-    glTexImage2D(GL_TEXTURE_2D, 0, 3,2048, 2048, 0, GL_RGB,GL_UNSIGNED_BYTE, lado);
+    glGenTextures(1,&texturaPista);
+    glBindTexture(GL_TEXTURE_2D, texturaPista);
+    glTexImage2D(GL_TEXTURE_2D, 0, 3,2048, 2048, 0, GL_RGB,GL_UNSIGNED_BYTE, matrizTexturaPista);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 }
 
-void Roda (float scala, float tx, float ty, float tz, bool flagRotacao, bool carrinhoAtivo)
-{
+void Roda(float tx, float ty, float tz, bool flagRotacao, bool carrinhoAtivo) { //carrinhoAtivo indica se há ação movimento da roda do carro
     glPushMatrix();
-    glTranslated(tx,ty,tz);
-    if(flagRotacao)
-        glRotatef(180,0.0,0.0,0.0);
-    if(carrinhoAtivo)
-        glRotatef(anguloMagico, 0, 0, 1);
-    glScalef(scala,scala,scala);
-    for (unsigned int j = 0; j < (roda.faces).size(); ++j )
-    {
-        if(j < 60)
-            glColor3f( 0, 1, 1 );
-        else
-            glColor3f( 1, 0, 0 );
-        glBegin ( GL_POLYGON );
-        for (unsigned int i = 0; i < (roda.faces[j]).size() ; ++i )
-        {
-            GLfloat vert[3] = {(roda.vertices[roda.faces[j][i][0]][0]),(roda.vertices[roda.faces[j][i][0]][1]),(roda.vertices[roda.faces[j][i][0]][2])};
-            glVertex3fv ( vert );
-        }
-        glEnd();
-    }
-    glPopMatrix();
-}
-
-void Frente (float scala, float tx, float ty, float tz)
-{
-    glPushMatrix();
-    glTranslated(tx,ty,tz);
-    glScalef(scala,scala,scala);
-    glColor3f( 0.1, 0.1, 0.1);
-    for (unsigned int j = 0; j < (frente.faces).size(); ++j )
-    {
-        glBegin ( GL_POLYGON );
-        for (unsigned int i = 0; i < (frente.faces[j]).size() ; ++i )
-        {
-            GLfloat vert[3] = {(frente.vertices[frente.faces[j][i][0]][0]),(frente.vertices[frente.faces[j][i][0]][1]),(frente.vertices[frente.faces[j][i][0]][2])};
-            glVertex3fv ( vert );
-        }
-        glEnd( );
-    }
-    glPopMatrix();
-}
-
-void Carro (int rot_y, float trans_x, float trans_z, bool carrinhoAtivo)
-{
-    glPushMatrix();
-    glTranslatef(trans_x,0.0,trans_z);
-    glRotatef(rot_y + 90,0.0,1.0,0.0);
-    glColor3f(1.0,0.0,0.0);
-    for (unsigned int j = 0; j < (carro.faces).size(); ++j )
-    {
-        glBegin ( GL_POLYGON );
-        for (unsigned int i = 0; i < (carro.faces[j]).size(); ++i )
-        {
-            GLfloat vert[3] = {(carro.vertices[carro.faces[j][i][0]][0]),(carro.vertices[carro.faces[j][i][0]][1]),(carro.vertices[carro.faces[j][i][0]][2])};
-            glVertex3fv ( vert );
-        }
-        glEnd( );
-    }
-    Roda (1.0, 2.0, 1.9, 1.0, true, carrinhoAtivo);
-    Roda (1.0, 2.0, 1.9, -0.8, false, carrinhoAtivo);
-    glPushMatrix();
+        glTranslated(tx,ty,tz);
+        if(flagRotacao)
+            glRotatef(180,0.0,0.0,0.0);
         if(carrinhoAtivo)
-            glRotatef(angRoda, 0.0, 0.1, 0.0);
-        Roda (1.0, -1.2, 1.9, 1.2, true, carrinhoAtivo);
-        Roda (1.0, -1.2, 1.9, -0.9, false, carrinhoAtivo);
-    glPopMatrix();
-    Frente(0.889, 0.69, 1.700, 0.0689);
+            glRotatef(rotacaoRoda, 0, 0, 1);
+        glScalef(1,1,1);
+        for (unsigned int j = 0; j < (roda.faces).size(); ++j ) {
+            if(j < 60)
+                glColor3f( 0, 1, 1 );
+            else
+                glColor3f( 1, 0, 0 );
+            glBegin ( GL_POLYGON );
+                for (unsigned int i = 0; i < (roda.faces[j]).size() ; ++i ) {
+                    GLfloat vert[3] = {(roda.vertices[roda.faces[j][i][0]][0]),(roda.vertices[roda.faces[j][i][0]][1]),(roda.vertices[roda.faces[j][i][0]][2])};
+                    glVertex3fv ( vert );
+                }
+            glEnd();
+        }
     glPopMatrix();
 }
 
-void DefineIluminacao (void)
-{
+void Frente(float tx, float ty, float tz) {
+    glPushMatrix();
+        glTranslated(tx,ty,tz);
+        glScalef(0.889, 0.889, 0.889);
+        glColor3f( 0.1, 0.1, 0.1);
+        for (unsigned int j = 0; j < (frente.faces).size(); ++j ) {
+            glBegin ( GL_POLYGON );
+                for (unsigned int i = 0; i < (frente.faces[j]).size() ; ++i ) {
+                    GLfloat vert[3] = {(frente.vertices[frente.faces[j][i][0]][0]),(frente.vertices[frente.faces[j][i][0]][1]),(frente.vertices[frente.faces[j][i][0]][2])};
+                    glVertex3fv ( vert );
+                }
+            glEnd( );
+        }
+    glPopMatrix();
+}
+
+void Carro (int rot_y, float trans_x, float trans_z, bool carrinhoAtivo) {
+    glPushMatrix();
+        glTranslatef(trans_x,0.0,trans_z);
+        glRotatef(rot_y + 90,0.0,1.0,0.0);
+        glColor3f(1.0,0.0,0.0);
+        for (unsigned int j = 0; j < (carro.faces).size(); ++j ) {
+            glBegin ( GL_POLYGON );
+                for (unsigned int i = 0; i < (carro.faces[j]).size(); ++i ) {
+                    GLfloat vert[3] = {(carro.vertices[carro.faces[j][i][0]][0]),(carro.vertices[carro.faces[j][i][0]][1]),(carro.vertices[carro.faces[j][i][0]][2])};
+                    glVertex3fv ( vert );
+                }
+            glEnd( );
+        }
+        //Roda traseira
+        Roda(2.0, 1.9, 1.0, true, carrinhoAtivo);
+        Roda(2.0, 1.9, -0.8, false, carrinhoAtivo);
+        glPushMatrix();
+            if(carrinhoAtivo) //Responsável pela diracao da roda
+                glRotatef(direcaoRoda, 0.0, 0.1, 0.0);
+            //Roda dianteira
+            Roda (-1.2, 1.9, 1.2, true, carrinhoAtivo);
+            Roda (-1.2, 1.9, -0.9, false, carrinhoAtivo);
+        glPopMatrix();
+        Frente(0.69, 1.700, 0.0689);
+    glPopMatrix();
+}
+
+void DefineIluminacao (void) {
     GLfloat luzAmbiente[4]= {3,3,3,3};
     GLfloat luzDifusa[4]= {0.5,0.5,0.5,0.5}; // "cor"
     GLfloat luzEspecular[4]= {1.0, 1.0, 1.0, 1.0}; // "brilho"
     GLfloat posicaoLuz[4]= {0.0, 5.0, 5.0, 1.0};
-
-    /*
-    GLfloat luzAmbiente[4]= {0.2,0.2,0.2,1.0};
-    GLfloat luzDifusa[4]= {0.7,0.7,0.7,1.0}; // "cor"
-    GLfloat luzEspecular[4]= {1.0, 1.0, 1.0, 1.0}; // "brilho"
-    GLfloat posicaoLuz[4]= {0.0, 5.0, 5.0, 1.0};
-    */
 
     // Capacidade de brilho do material
     GLfloat especularidade[4]= {1.0,1.0,1.0,1.0};
@@ -202,165 +170,140 @@ void DefineIluminacao (void)
     glLightfv(GL_LIGHT0, GL_POSITION, posicaoLuz );
 }
 
-void Piso(float scale, float altura)
-{
+void Piso(void) {
     glPushMatrix();
-    glTranslatef(0.0, altura, 0.0);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, textura_id2);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    glBegin(GL_POLYGON);
-    glNormal3f(0,-1,0);
-    glVertex3f(100.0, 0.0, 100.0);
-    glTexCoord2f(0,1);
-    glVertex3f(-100.0, 0.0, 100.0);
-    glTexCoord2f(1,1);
-    glVertex3f(-100.0, 0.0, -100.0);
-    glTexCoord2f(1,0);
-    glVertex3f(100.0, 0.0, -100.0);
-    glTexCoord2f(0,0);
-    glEnd();
+        glTranslatef(0.0, -2, 0.0);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texturaPista);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        glBegin(GL_POLYGON);
+            glNormal3f(0,-1,0);
+            glVertex3f(100.0, 0.0, 100.0);
+            glTexCoord2f(0,1);
+            glVertex3f(-100.0, 0.0, 100.0);
+            glTexCoord2f(1,1);
+            glVertex3f(-100.0, 0.0, -100.0);
+            glTexCoord2f(1,0);
+            glVertex3f(100.0, 0.0, -100.0);
+            glTexCoord2f(0,0);
+        glEnd();
     glPopMatrix();
 }
 
-
-void Desenha(void)
-{
+void Desenha(void) {
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     DefineIluminacao();
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(Trans_carro_x,3, Trans_carro_z + 13, Trans_carro_x,0,Trans_carro_z, 0,1,0); // Camera
+    //gluLookAt(Trans_carro_x,3 , Trans_carro_z + 13, Trans_carro_x,0,Trans_carro_z, 0,1,0); // Camera
     //gluLookAt(camera_x,3,camera_z, Trans_carro_x,0,Trans_carro_z,0,1,0); // Camera atras do carro
-    //gluLookAt(camera_x,15,camera_z, Trans_carro_x,0,Trans_carro_z,0,1,0); // Camera atras do carro OFICIAl
+    gluLookAt(camera_x, 20, camera_z, Trans_carro_x, 0, Trans_carro_z, 0, 1, 0); // Camera atras do carro OFICIAl
 
     glPushMatrix();
-    Piso(1.0,-2.0);
-    Carro(Rot_carro, 3 + Trans_carro_x, Trans_carro_z, true);
-    Carro(220, 0, 0, false);
-    Carro(270, -25, 10, false);
-    /* origem volta para o sistema de coordenadas original */
+        Piso();
+        Carro(direcaoCarro, Trans_carro_x + 3, Trans_carro_z, true);
+        Carro(220, 0, 0, false);
+        Carro(270, -25, 10, false);
+        /* origem volta para o sistema de coordenadas original */
     glPopMatrix();
 
     glutSwapBuffers();
 }
 
-
-void AlteraTamanhoJanela (int w, int h)
-{
+void AlteraTamanhoJanela (int w, int h) {
     glViewport (0, 0, (GLsizei) w, (GLsizei) h);
-    if(h == 0) h = 1;
-
+    if(h == 0)
+        h = 1;
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity ();
     gluPerspective(65, (GLfloat) w/(GLfloat) h, 0.5, 500);
 }
 
-void idle(void)
-{
-    Trans_carro_x = Trans_carro_x + Velocidade*sin(Rot_carro*PI/180);
-    Trans_carro_z = Trans_carro_z + Velocidade*cos(Rot_carro*PI/180);
-    camera_x = Trans_carro_x + 13.0*sin((Rot_carro+180)*PI/180);
-    camera_z = Trans_carro_z + 13.0*cos((Rot_carro+180)*PI/180);
+void idle(void) {
+    Trans_carro_x = Trans_carro_x + velocidadeCarro*sin(direcaoCarro*PI/180);
+    Trans_carro_z = Trans_carro_z + velocidadeCarro*cos(direcaoCarro*PI/180);
+    camera_x = Trans_carro_x + 13.0*sin((direcaoCarro+180)*PI/180);
+    camera_z = Trans_carro_z + 13.0*cos((direcaoCarro+180)*PI/180);
     glutPostRedisplay();
 
-    if(Velocidade != 0) {
-        anguloMagico = (anguloMagico + 3) % 360;
+    if(velocidadeCarro != 0) { //Responsável por deixar a roda girando
+        rotacaoRoda = (rotacaoRoda + 3) % 360;
     }
 
-    /*
-    if(Velocidade != 0) {
-        if(angRoda == 0)
+    if(velocidadeCarro != 0) { //Responsável por alinha a roda quando o carro não está virando
+        if(direcaoRoda == 0)
             return;
 
-        if(angRoda > 0)
-            angRoda = angRoda - 1;
+        if(direcaoRoda > 0)
+            direcaoRoda = direcaoRoda - 0.1;
 
-        if(angRoda < 0)
-            angRoda = angRoda + 1;
-    }
-    */
-}
-
-
-
-void Teclado(unsigned char key, int x, int y)
-{
-    switch (key)
-    {
-    case 'd':
-        if(Velocidade == 0.0)
-        {
-            if(angRoda > -20)
-                angRoda = angRoda - 5;
-            break;
-        }
-        if(Velocidade > 0)
-        {
-            Rot_carro = (Rot_carro - 5) % 360;
-            if(angRoda > -20)
-                angRoda = angRoda - 5;
-        }
-        else
-        {
-            Rot_carro = (Rot_carro + 5) % 360;
-            if(angRoda < 20)
-                angRoda = angRoda + 5;
-        }
-        glutPostRedisplay();
-        break;
-
-    case 'a':
-        if(Velocidade == 0.0)
-        {
-            if(angRoda < 20)
-                angRoda = angRoda + 5;
-            break;
-        }
-
-        if(Velocidade > 0)
-        {
-            Rot_carro = (Rot_carro + 5) % 360;
-            if(angRoda < 20)
-                angRoda = angRoda + 5;
-        }
-        else
-        {
-            Rot_carro = (Rot_carro - 5) % 360;
-            if(angRoda > -20)
-                angRoda = angRoda - 5;
-        }
-        glutPostRedisplay();
-        break;
-
-    case 'r':
-        if(Velocidade == 0.00)
-            Velocidade = -0.02;
-        else
-            Velocidade = 0.00;
-        glutPostRedisplay();
-        break;
-
-    case 'e':
-        if(Velocidade == 0.0)
-            Velocidade = 0.05;
-        else
-            Velocidade = 0.00;
-        glutPostRedisplay();
-        break;
-
-    case 27:
-        exit(0);
-        break;
-
-    default:
-        printf("[ERROR] - Entrada: %c invalida.\n", key);
-        break;
+        if(direcaoRoda < 0)
+            direcaoRoda = direcaoRoda + 0.1;
     }
 }
 
-int main(int argc, char** argv)
-{
+void Teclado(unsigned char key, int x, int y) {
+    switch (key) {
+        case 'd':
+            if(velocidadeCarro == 0.0) {
+                if(direcaoRoda > -20) //Angulo máximo que a roda pode virar para direita
+                    direcaoRoda = direcaoRoda - 5;
+                break;
+            }
+            if(velocidadeCarro > 0) {
+                direcaoCarro = (direcaoCarro - 5) % 360;
+                if(direcaoRoda > -20)
+                    direcaoRoda = direcaoRoda - 5;
+            }
+            else {  //A direcao da roda é oposto quando é macha ré, esquerda
+                direcaoCarro = (direcaoCarro + 5) % 360;
+                if(direcaoRoda < 20)
+                    direcaoRoda = direcaoRoda + 5;
+            }
+            glutPostRedisplay();
+            break;
+        case 'a':
+            if(velocidadeCarro == 0.0) {
+                if(direcaoRoda < 20) //Angulo máximo que a roda pode virar para esquerda
+                    direcaoRoda = direcaoRoda + 5;
+                break;
+            }
+            if(velocidadeCarro > 0) {
+                direcaoCarro = (direcaoCarro + 5) % 360;
+                if(direcaoRoda < 20)
+                    direcaoRoda = direcaoRoda + 5;
+            }
+            else {  //A direcao da roda é oposto quando é macha ré, direita
+                direcaoCarro = (direcaoCarro - 5) % 360;
+                if(direcaoRoda > -20)
+                    direcaoRoda = direcaoRoda - 5;
+            }
+            glutPostRedisplay();
+            break;
+        case 's':   //Mancha ré
+            if(velocidadeCarro == 0.00)
+                velocidadeCarro = -0.02;
+            else
+                velocidadeCarro = 0.00;
+            glutPostRedisplay();
+            break;
+        case 'w':   //Aceleração
+            if(velocidadeCarro == 0.0)
+                velocidadeCarro = 0.05;
+            else
+                velocidadeCarro = 0.00;
+            glutPostRedisplay();
+            break;
+        case 27:
+            exit(0);
+            break;
+        default:
+            printf("[ERROR] - Entrada: %c invalida.\n", key);
+            break;
+    }
+}
+
+int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode (GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB);
     glutInitWindowSize (800, 800);
